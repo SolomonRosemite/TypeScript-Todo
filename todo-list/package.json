@@ -1,14 +1,15 @@
 {
   "name": "lsp-todo",
+  "displayName": "Simple Todo",
   "description": "A Very simple Todo list.",
-  "author": "Solomon Rosemite",
+  "author": "SolomonRosemite",
   "license": "MIT",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "repository": {
     "type": "git",
     "url": "https://github.com/SolomonRosemite/TypeScript-Todo"
   },
-  "publisher": "Solomon Rosemite",
+  "publisher": "SolomonRosemite",
   "categories": [],
   "keywords": [
     "multi-root ready"
@@ -25,11 +26,11 @@
       "type": "object",
       "title": "Configuration",
       "properties": {
-        "languageTodoServer.maxNumberOfProblems": {
+        "languageTodoServer.maxNumberOfTodos": {
           "scope": "resource",
           "type": "number",
           "default": 100,
-          "description": "Controls the maximum number of problems produced by the server."
+          "description": "Controls the maximum number of Todos produced by the server."
         },
         "languageTodoServer.trace.server": {
           "scope": "window",

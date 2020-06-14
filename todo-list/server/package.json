@@ -2,7 +2,7 @@
   "name": "lsp-todo-server",
   "description": "Implementation of a language server in node.",
   "version": "1.0.0",
-  "author": "Solomon Rosemite",
+  "author": "SolomonRosemite",
   "license": "MIT",
   "engines": {
     "node": "*"
