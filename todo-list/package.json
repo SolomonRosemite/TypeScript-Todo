@@ -3,6 +3,7 @@
   "displayName": "Simple Todo",
   "description": "A Very simple Todo list.",
   "author": "SolomonRosemite",
+  "icon": "images/todo.png",
   "license": "MIT",
   "version": "1.0.1",
   "repository": {
