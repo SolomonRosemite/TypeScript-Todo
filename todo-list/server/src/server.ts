@@ -81,25 +81,25 @@ connection.onInitialized(() => {
 });
 
 // The example settings
-interface ExampleSettings {
-  maxNumberOfProblems: number;
+interface Settings {
+  maxNumberOfTodos: number;
 }
 
 // The global settings, used when the `workspace/configuration` request is not supported by the client.
 // Please note that this is not the case when using this server with the client provided in this example
 // but could happen with other clients.
-const defaultSettings: ExampleSettings = { maxNumberOfProblems: 1000 };
-let globalSettings: ExampleSettings = defaultSettings;
+const defaultSettings: Settings = { maxNumberOfTodos: 1000 };
+let globalSettings: Settings = defaultSettings;
 
 // Cache the settings of all open documents
-let documentSettings: Map<string, Thenable<ExampleSettings>> = new Map();
+let documentSettings: Map<string, Thenable<Settings>> = new Map();
 
 connection.onDidChangeConfiguration((change) => {
   if (hasConfigurationCapability) {
     // Reset all cached document settings
     documentSettings.clear();
   } else {
-    globalSettings = <ExampleSettings>(
+    globalSettings = <Settings>(
       (change.settings.languageTodoServer || defaultSettings)
     );
   }
@@ -108,7 +108,7 @@ connection.onDidChangeConfiguration((change) => {
   documents.all().forEach(validateTextDocument);
 });
 
-function getDocumentSettings(resource: string): Thenable<ExampleSettings> {
+function getDocumentSettings(resource: string): Thenable<Settings> {
   if (!hasConfigurationCapability) {
     return Promise.resolve(globalSettings);
   }
@@ -147,7 +147,7 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
 
   while (
     (m = patternV2.exec(text.toUpperCase())) &&
-    problems < settings.maxNumberOfProblems
+    problems < settings.maxNumberOfTodos
   ) {
     problems++;
 
@@ -155,17 +155,18 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
       line: textDocument.positionAt(m.index).line,
       character: Number.MAX_VALUE - 1,
     };
+
     const range: Range = {
       start: textDocument.positionAt(m.index),
       end: end,
     };
 
-    let line = textDocument.getText(range);
+    const line = textDocument.getText(range);
 
     let diagnostic: Diagnostic = {
       severity: DiagnosticSeverity.Information,
       range: range,
-      message: line,
+      message: line.substring(2).trimEnd(),
       source: "Rosemite",
       code: "todo",
     };
