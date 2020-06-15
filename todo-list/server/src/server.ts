@@ -12,8 +12,6 @@ import {
   TextDocumentSyncKind,
   InitializeResult,
   Range,
-  Position,
-  DiagnosticTag,
 } from "vscode-languageserver";
 
 import { TextDocument } from "vscode-languageserver-textdocument";
@@ -80,23 +78,17 @@ connection.onInitialized(() => {
   }
 });
 
-// The example settings
 interface Settings {
   maxNumberOfTodos: number;
 }
 
-// The global settings, used when the `workspace/configuration` request is not supported by the client.
-// Please note that this is not the case when using this server with the client provided in this example
-// but could happen with other clients.
 const defaultSettings: Settings = { maxNumberOfTodos: 1000 };
 let globalSettings: Settings = defaultSettings;
 
-// Cache the settings of all open documents
 let documentSettings: Map<string, Thenable<Settings>> = new Map();
 
 connection.onDidChangeConfiguration((change) => {
   if (hasConfigurationCapability) {
-    // Reset all cached document settings
     documentSettings.clear();
   } else {
     globalSettings = <Settings>(
@@ -135,7 +127,6 @@ documents.onDidChangeContent((change) => {
 });
 
 async function validateTextDocument(textDocument: TextDocument): Promise<void> {
-  // In this simple example we get the settings for every validate run.
   let settings = await getDocumentSettings(textDocument.uri);
 
   let text = textDocument.getText();
@@ -151,14 +142,12 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
   ) {
     problems++;
 
-    const end: Position = {
-      line: textDocument.positionAt(m.index).line,
-      character: Number.MAX_VALUE - 1,
-    };
-
     const range: Range = {
       start: textDocument.positionAt(m.index),
-      end: end,
+      end: {
+        line: textDocument.positionAt(m.index).line,
+        character: Number.MAX_VALUE - 1,
+      },
     };
 
     const line = textDocument.getText(range);
@@ -176,6 +165,13 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
   // Send the computed diagnostics to VSCode.
   connection.sendDiagnostics({ uri: textDocument.uri, diagnostics });
 }
+
+// This handler provides the initial list of the completion items.
+connection.onCompletion(
+  (_textDocumentPosition: TextDocumentPositionParams): CompletionItem[] => {
+    return [];
+  }
+);
 
 // Make the text document manager listen on the connection
 // for open, change and close text document events
