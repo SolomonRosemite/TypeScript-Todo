@@ -4,8 +4,9 @@
   "description": "A Very simple Todo list.",
   "author": "SolomonRosemite",
   "icon": "images/todo.png",
+  "readme": "Create a Todo by typing '// TODO'.\nIt will be highlighted and added to the Problems tap.",
   "license": "MIT",
-  "version": "1.0.1",
+  "version": "1.1.2",
   "repository": {
     "type": "git",
     "url": "https://github.com/SolomonRosemite/TypeScript-Todo"

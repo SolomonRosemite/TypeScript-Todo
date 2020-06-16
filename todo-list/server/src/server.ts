@@ -130,7 +130,10 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
   let settings = await getDocumentSettings(textDocument.uri);
 
   let text = textDocument.getText();
-  let patternV2 = RegExp("// TODO*", "g");
+
+  const values = GetRightLanguage(textDocument.languageId);
+
+  let patternV2 = RegExp(values[0], "g");
   let m: RegExpExecArray | null;
 
   let problems = 0;
@@ -155,7 +158,7 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
     let diagnostic: Diagnostic = {
       severity: DiagnosticSeverity.Information,
       range: range,
-      message: line.substring(2).trimEnd(),
+      message: line.substring(parseInt(values[1])).trimEnd(),
       source: "Rosemite",
       code: "todo",
     };
@@ -164,6 +167,21 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
 
   // Send the computed diagnostics to VSCode.
   connection.sendDiagnostics({ uri: textDocument.uri, diagnostics });
+}
+
+function GetRightLanguage(languageId: string): string[] {
+  switch (languageId) {
+    case "python":
+      return ["# TODO*", "2"];
+    case "yaml":
+      return ["# TODO*", "2"];
+    case "html":
+      return ["<!-- TODO*", "0"];
+    case "lua":
+      return ["-- TODO*", "0"];
+    default:
+      return ["// TODO*", "2"];
+  }
 }
 
 // This handler provides the initial list of the completion items.
