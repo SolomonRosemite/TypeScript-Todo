@@ -52,40 +52,45 @@ export function activate(context: ExtensionContext) {
 
   client.start();
 
-  workspace.findFiles("**/*.*", "**​/node_modules/**").then((files) => {
-    // Foreach textDocument highlight todo
-    for (let i = 0; i < files.length; i++) {
-      workspace.openTextDocument(files[i]).then((textDocument) => {
-        let text = textDocument.getText();
-        const values = GetRightLanguage(textDocument.languageId);
-        let patternV2 = RegExp(values[0], "g");
-        let m: RegExpExecArray | null;
-        let diagnostics: Diagnostic[] = [];
-        let todos = 0;
-        while ((m = patternV2.exec(text.toUpperCase()))) {
-          todos++;
+  workspace
+    .findFiles(
+      "**/*.{ts,js,html,bat,c,cpp,cs,go,java,lua,php,yaml,py,swift}",
+      "**/node_modules/**"
+    )
+    .then((files) => {
+      // Foreach textDocument highlight todo
+      for (let i = 0; i < files.length; i++) {
+        workspace.openTextDocument(files[i]).then((textDocument) => {
+          let text = textDocument.getText();
+          const values = GetRightLanguage(textDocument.languageId);
+          let patternV2 = RegExp(values[0], "g");
+          let m: RegExpExecArray | null;
+          let diagnostics: Diagnostic[] = [];
+          let todos = 0;
+          while ((m = patternV2.exec(text.toUpperCase()))) {
+            todos++;
 
-          const end = new Position(
-            textDocument.positionAt(m.index).line,
-            Number.MAX_VALUE - 1
-          );
+            const end = new Position(
+              textDocument.positionAt(m.index).line,
+              Number.MAX_VALUE - 1
+            );
 
-          const range = new Range(textDocument.positionAt(m.index), end);
+            const range = new Range(textDocument.positionAt(m.index), end);
 
-          const line = textDocument.getText(range);
-          let diagnostic: Diagnostic = {
-            severity: DiagnosticSeverity.Information,
-            range: range,
-            message: line.substring(parseInt(values[1])).trimRight(),
-            source: "Rosemite",
-            code: "todo",
-          };
-          diagnostics.push(diagnostic);
-        }
-        client.diagnostics.set(textDocument.uri, diagnostics);
-      });
-    }
-  });
+            const line = textDocument.getText(range);
+            let diagnostic: Diagnostic = {
+              severity: DiagnosticSeverity.Information,
+              range: range,
+              message: line.substring(parseInt(values[1])).trimRight(),
+              source: "Rosemite",
+              code: "todo",
+            };
+            diagnostics.push(diagnostic);
+          }
+          client.diagnostics.set(textDocument.uri, diagnostics);
+        });
+      }
+    });
 
   function GetRightLanguage(languageId: string): string[] {
     switch (languageId) {

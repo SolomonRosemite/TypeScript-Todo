@@ -70,33 +70,6 @@ connection.onInitialized(() => {
   }
 });
 
-interface Settings {
-  maxNumberOfTodos: number;
-}
-
-const defaultSettings: Settings = { maxNumberOfTodos: 1000 };
-let globalSettings: Settings = defaultSettings;
-
-let documentSettings: Map<string, Thenable<Settings>> = new Map();
-
-connection.onDidChangeConfiguration((change) => {
-  if (hasConfigurationCapability) {
-    documentSettings.clear();
-  } else {
-    globalSettings = <Settings>(
-      (change.settings.languageTodoServer || defaultSettings)
-    );
-  }
-
-  // Revalidate all open text documents
-  documents.all().forEach(validateTextDocument);
-});
-
-// Only keep settings for open documents
-documents.onDidClose((e) => {
-  documentSettings.delete(e.document.uri);
-});
-
 documents.onDidChangeContent((change) => {
   validateTextDocument(change.document);
 });

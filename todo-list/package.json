@@ -4,9 +4,8 @@
   "description": "A Very simple Todo list.",
   "author": "SolomonRosemite",
   "icon": "images/todo.png",
-  "readme": "Create a Todo by typing '// TODO'.\nIt will be highlighted and added to the Problems tap.",
   "license": "MIT",
-  "version": "1.1.2",
+  "version": "1.2.2",
   "repository": {
     "type": "git",
     "url": "https://github.com/SolomonRosemite/TypeScript-Todo"
@@ -26,26 +25,7 @@
   "contributes": {
     "configuration": {
       "type": "object",
-      "title": "Configuration",
-      "properties": {
-        "languageTodoServer.maxNumberOfTodos": {
-          "scope": "resource",
-          "type": "number",
-          "default": 100,
-          "description": "Controls the maximum number of Todos produced by the server."
-        },
-        "languageTodoServer.trace.server": {
-          "scope": "window",
-          "type": "string",
-          "enum": [
-            "off",
-            "messages",
-            "verbose"
-          ],
-          "default": "off",
-          "description": "Traces the communication between VS Code and the language server."
-        }
-      }
+      "title": "Configuration"
     }
   },
   "scripts": {
