@@ -15,7 +15,3 @@ Simple Todo can be [installed from the Visual Studio Code Marketplace](https://m
 - All Todos will be underlined and listed in the Problems tap.
 
 ![](https://github.com/SolomonRosemite/TypeScript-Todo/blob/master/todo-list/assets/example.gif?raw=true)
-
-## More
-
-- [GitHub Repository](https://github.com/SolomonRosemite/TypeScript-Todo)
