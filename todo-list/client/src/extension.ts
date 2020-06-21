@@ -1,5 +1,16 @@
 import * as path from "path";
-import { workspace, ExtensionContext, commands } from "vscode";
+import {
+  workspace,
+  ExtensionContext,
+  commands,
+  TextDocument,
+  languages,
+  Diagnostic,
+  Position,
+  DiagnosticSeverity,
+  Range,
+  window,
+} from "vscode";
 
 import {
   LanguageClient,
@@ -40,6 +51,56 @@ export function activate(context: ExtensionContext) {
   );
 
   client.start();
+
+  workspace.findFiles("**/*.*", "**​/node_modules/**").then((files) => {
+    // Foreach textDocument highlight todo
+    for (let i = 0; i < files.length; i++) {
+      workspace.openTextDocument(files[i]).then((textDocument) => {
+        let text = textDocument.getText();
+        const values = GetRightLanguage(textDocument.languageId);
+        let patternV2 = RegExp(values[0], "g");
+        let m: RegExpExecArray | null;
+        let diagnostics: Diagnostic[] = [];
+        let todos = 0;
+        while ((m = patternV2.exec(text.toUpperCase()))) {
+          todos++;
+
+          const end = new Position(
+            textDocument.positionAt(m.index).line,
+            Number.MAX_VALUE - 1
+          );
+
+          const range = new Range(textDocument.positionAt(m.index), end);
+
+          const line = textDocument.getText(range);
+          let diagnostic: Diagnostic = {
+            severity: DiagnosticSeverity.Information,
+            range: range,
+            message: line.substring(parseInt(values[1])).trimRight(),
+            source: "Rosemite",
+            code: "todo",
+          };
+          diagnostics.push(diagnostic);
+        }
+        client.diagnostics.set(textDocument.uri, diagnostics);
+      });
+    }
+  });
+
+  function GetRightLanguage(languageId: string): string[] {
+    switch (languageId) {
+      case "python":
+        return ["# TODO*", "2"];
+      case "yaml":
+        return ["# TODO*", "2"];
+      case "html":
+        return ["<!-- TODO*", "0"];
+      case "lua":
+        return ["-- TODO*", "0"];
+      default:
+        return ["// TODO*", "2"];
+    }
+  }
 }
 
 export function deactivate(): Thenable<void> | undefined {

@@ -7,7 +7,6 @@ import {
   InitializeParams,
   DidChangeConfigurationNotification,
   CompletionItem,
-  CompletionItemKind,
   TextDocumentPositionParams,
   TextDocumentSyncKind,
   InitializeResult,
@@ -30,8 +29,6 @@ let hasDiagnosticRelatedInformationCapability: boolean = false;
 connection.onInitialize((params: InitializeParams) => {
   let capabilities = params.capabilities;
 
-  // Does the client support the `workspace/configuration` request?
-  // If not, we fall back using global settings.
   hasConfigurationCapability = !!(
     capabilities.workspace && !!capabilities.workspace.configuration
   );
@@ -46,7 +43,7 @@ connection.onInitialize((params: InitializeParams) => {
 
   const result: InitializeResult = {
     capabilities: {
-      textDocumentSync: TextDocumentSyncKind.Incremental,
+      textDocumentSync: TextDocumentSyncKind.Full,
       // Tell the client that this server supports code completion.
       completionProvider: {
         resolveProvider: true,
@@ -70,11 +67,6 @@ connection.onInitialized(() => {
       DidChangeConfigurationNotification.type,
       undefined
     );
-  }
-  if (hasWorkspaceFolderCapability) {
-    connection.workspace.onDidChangeWorkspaceFolders((_event) => {
-      connection.console.log("Workspace folder change event received.");
-    });
   }
 });
 
@@ -100,51 +92,29 @@ connection.onDidChangeConfiguration((change) => {
   documents.all().forEach(validateTextDocument);
 });
 
-function getDocumentSettings(resource: string): Thenable<Settings> {
-  if (!hasConfigurationCapability) {
-    return Promise.resolve(globalSettings);
-  }
-  let result = documentSettings.get(resource);
-  if (!result) {
-    result = connection.workspace.getConfiguration({
-      scopeUri: resource,
-      section: "languageTodoServer",
-    });
-    documentSettings.set(resource, result);
-  }
-  return result;
-}
-
 // Only keep settings for open documents
 documents.onDidClose((e) => {
   documentSettings.delete(e.document.uri);
 });
 
-// The content of a text document has changed. This event is emitted
-// when the text document first opened or when its content has changed.
 documents.onDidChangeContent((change) => {
   validateTextDocument(change.document);
 });
 
 async function validateTextDocument(textDocument: TextDocument): Promise<void> {
-  let settings = await getDocumentSettings(textDocument.uri);
+  // Get current textDocument
+  const text = textDocument.getText();
 
-  let text = textDocument.getText();
-
+  // Returns RegExp for current used Language
   const values = GetRightLanguage(textDocument.languageId);
-
-  let patternV2 = RegExp(values[0], "g");
+  const patternV2 = RegExp(values[0], "g");
   let m: RegExpExecArray | null;
 
-  let problems = 0;
+  // Store Diagnostics
   let diagnostics: Diagnostic[] = [];
 
-  while (
-    (m = patternV2.exec(text.toUpperCase())) &&
-    problems < settings.maxNumberOfTodos
-  ) {
-    problems++;
-
+  // Get all todos from text
+  while ((m = patternV2.exec(text.toUpperCase()))) {
     const range: Range = {
       start: textDocument.positionAt(m.index),
       end: {
@@ -153,22 +123,27 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
       },
     };
 
-    const line = textDocument.getText(range);
-
-    let diagnostic: Diagnostic = {
+    // Create Diagnostic
+    const diagnostic: Diagnostic = {
       severity: DiagnosticSeverity.Information,
       range: range,
-      message: line.substring(parseInt(values[1])).trimEnd(),
+      message: textDocument
+        .getText(range)
+        .substring(parseInt(values[1]))
+        .trimEnd(),
       source: "Rosemite",
       code: "todo",
     };
+
+    // Add Diagnostic to list
     diagnostics.push(diagnostic);
   }
 
-  // Send the computed diagnostics to VSCode.
+  // Send Diagnostics to client
   connection.sendDiagnostics({ uri: textDocument.uri, diagnostics });
 }
 
+// Returns RegExp for current used Language
 function GetRightLanguage(languageId: string): string[] {
   switch (languageId) {
     case "python":
