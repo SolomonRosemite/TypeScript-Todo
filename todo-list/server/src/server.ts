@@ -120,15 +120,15 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
 function GetRightLanguage(languageId: string): string[] {
   switch (languageId) {
     case "python":
-      return ["# TODO*", "2"];
+      return ["# TODO", "2"];
     case "yaml":
-      return ["# TODO*", "2"];
+      return ["# TODO", "2"];
     case "html":
-      return ["<!-- TODO*", "0"];
+      return ["<!-- TODO", "0"];
     case "lua":
-      return ["-- TODO*", "0"];
+      return ["-- TODO", "0"];
     default:
-      return ["// TODO*", "2"];
+      return ["// TODO", "2"];
   }
 }
 
