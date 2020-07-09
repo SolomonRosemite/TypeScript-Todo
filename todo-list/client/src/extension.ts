@@ -54,7 +54,7 @@ export function activate(context: ExtensionContext) {
 
   workspace
     .findFiles(
-      "**/*.{ts,js,html,bat,c,cpp,cs,go,java,lua,php,yaml,py,swift}",
+      "**/*.{ts,js,html,bat,c,cpp,cs,go,java,lua,php,yaml,py,swift,dart}",
       "**/node_modules/**"
     )
     .then((files) => {
@@ -62,14 +62,14 @@ export function activate(context: ExtensionContext) {
       for (let i = 0; i < files.length; i++) {
         workspace.openTextDocument(files[i]).then((textDocument) => {
           let text = textDocument.getText();
+
           const values = GetRightLanguage(textDocument.languageId);
           let patternV2 = RegExp(values[0], "g");
+
           let m: RegExpExecArray | null;
           let diagnostics: Diagnostic[] = [];
-          let todos = 0;
-          while ((m = patternV2.exec(text.toUpperCase()))) {
-            todos++;
 
+          while ((m = patternV2.exec(text.toUpperCase()))) {
             const end = new Position(
               textDocument.positionAt(m.index).line,
               Number.MAX_VALUE - 1
