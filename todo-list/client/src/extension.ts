@@ -10,6 +10,7 @@ import {
   DiagnosticSeverity,
   Range,
   window,
+  GlobPattern,
 } from "vscode";
 
 import {
@@ -55,7 +56,7 @@ export function activate(context: ExtensionContext) {
   workspace
     .findFiles(
       "**/*.{ts,js,html,bat,c,cpp,cs,go,java,lua,php,yaml,py,swift,dart}",
-      "**/node_modules/**"
+      "**/{Library,node_modules}/**"
     )
     .then((files) => {
       // Foreach textDocument highlight todo
