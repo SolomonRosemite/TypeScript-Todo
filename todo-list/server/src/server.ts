@@ -121,6 +121,8 @@ function GetRightLanguage(languageId: string): string[] {
   switch (languageId) {
     case "python":
       return ["# TODO", "2"];
+    case "powershell":
+      return ["# TODO", "2"];
     case "yaml":
       return ["# TODO", "2"];
     case "html":

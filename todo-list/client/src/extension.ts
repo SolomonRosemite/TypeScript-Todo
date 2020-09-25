@@ -55,7 +55,7 @@ export function activate(context: ExtensionContext) {
 
   workspace
     .findFiles(
-      "**/*.{ts,js,html,bat,c,cpp,cs,go,java,lua,php,yaml,py,swift,dart}",
+      "**/*.{ts,js,html,bat,c,cpp,cs,go,java,lua,php,yaml,py,swift,dart,powershell}",
       "**/{Library,node_modules}/**"
     )
     .then((files) => {
