@@ -71,20 +71,46 @@ connection.onInitialized(() => {
 });
 
 documents.onDidChangeContent((change) => {
-  validateTextDocument(change.document);
+  validateTextDocument(
+    change.document,
+    "TODO",
+    DiagnosticSeverity.Information,
+    []
+  )
+    .then((values) =>
+      validateTextDocument(
+        change.document,
+        "BUG",
+        DiagnosticSeverity.Warning,
+        values
+      )
+    )
+    .then((values) =>
+      validateTextDocument(
+        change.document,
+        "NOTE",
+        DiagnosticSeverity.Hint,
+        values
+      )
+    );
 });
 
-async function validateTextDocument(textDocument: TextDocument): Promise<void> {
+async function validateTextDocument(
+  textDocument: TextDocument,
+  keyWord: string,
+  type: DiagnosticSeverity,
+  prev: Diagnostic[]
+): Promise<Diagnostic[]> {
   // Get current textDocument
   const text = textDocument.getText();
 
   // Returns RegExp for current used Language
-  const values = GetRightLanguage(textDocument.languageId);
+  const values = GetRightLanguage(textDocument.languageId, keyWord);
   const patternV2 = RegExp(values[0], "g");
   let m: RegExpExecArray | null;
 
   // Store Diagnostics
-  let diagnostics: Diagnostic[] = [];
+  let diagnostics: Diagnostic[] = prev;
 
   // Get all todos from text
   while ((m = patternV2.exec(text.toUpperCase()))) {
@@ -98,7 +124,7 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
 
     // Create Diagnostic
     const diagnostic: Diagnostic = {
-      severity: DiagnosticSeverity.Information,
+      severity: type,
       range: range,
       message: textDocument
         .getText(range)
@@ -114,23 +140,24 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
 
   // Send Diagnostics to client
   connection.sendDiagnostics({ uri: textDocument.uri, diagnostics });
+  return diagnostics;
 }
 
 // Returns RegExp for current used Language
-function GetRightLanguage(languageId: string): string[] {
+function GetRightLanguage(languageId: string, keyWord: string): string[] {
   switch (languageId) {
     case "python":
-      return ["# TODO", "2"];
+      return [`# ${keyWord}`, "2"];
     case "powershell":
-      return ["# TODO", "2"];
+      return [`# ${keyWord}`, "2"];
     case "yaml":
-      return ["# TODO", "2"];
+      return [`# ${keyWord}`, "2"];
     case "html":
-      return ["<!-- TODO", "0"];
+      return [`<!-- ${keyWord}`, "0"];
     case "lua":
-      return ["-- TODO", "0"];
+      return [`-- ${keyWord}`, "0"];
     default:
-      return ["// TODO", "2"];
+      return [`// ${keyWord}`, "2"];
   }
 }
 
