@@ -9,7 +9,7 @@
     <img src="https://img.shields.io/badge/platform-Visual Studio Code-yellow?style=flat-square" alt="Project Platform" />
   </p>
 
-![](https://raw.githubusercontent.com/SolomonRosemite/TypeScript-Todo/8cbadc5e9f21f6412c8b1517b9c7d012ee52f6c4/todo-list/assets/example.png)
+![](https://raw.githubusercontent.com/SolomonRosemite/TypeScript-Todo/master/todo-list/assets/example.png)
 
 # Features📖
 
@@ -30,10 +30,10 @@ Example Bug:
 Example Note:
 
 ```javascript
-// Note: Notes don't get listed to the problems tap
+// Note: Notes don't get listed to the problems tab
 ```
 
-- All Todos & Bugs will be underlined and listed in the Problems tap.
+- All Todos & Bugs will be underlined and listed in the Problems tab.
 
 # Installation
 
