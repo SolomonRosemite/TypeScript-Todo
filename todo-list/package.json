@@ -5,7 +5,7 @@
   "author": "SolomonRosemite",
   "icon": "images/todo.png",
   "license": "MIT",
-  "version": "1.4.4",
+  "version": "1.4.5",
   "repository": {
     "type": "git",
     "url": "https://github.com/SolomonRosemite/TypeScript-Todo"

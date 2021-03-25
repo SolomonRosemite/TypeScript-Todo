@@ -56,7 +56,7 @@ export function activate(context: ExtensionContext) {
   workspace
     .findFiles(
       "**/*.{ts,js,html,bat,c,cpp,cs,go,java,lua,php,yaml,py,swift,dart,powershell}",
-      "**/{Library,node_modules}/**"
+      "**/{Library,node_modules,dist,build,.next}/**"
     )
     .then((files) => {
       // Foreach textDocument highlight todo
