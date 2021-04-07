@@ -5,7 +5,7 @@
   "author": "SolomonRosemite",
   "icon": "images/todo.png",
   "license": "MIT",
-  "version": "1.4.5",
+  "version": "1.5.6",
   "repository": {
     "type": "git",
     "url": "https://github.com/SolomonRosemite/TypeScript-Todo"
@@ -30,8 +30,8 @@
   },
   "scripts": {
     "vscode:prepublish": "npm run compile",
-    "compile": "tsc",
-    "watch": "tsc -w",
+    "compile": "tsc -b",
+    "watch": "tsc -b -w",
     "postinstall": "cd client && npm install && cd ../server && npm install && cd ..",
     "test": "sh ./scripts/e2e.sh"
   },
