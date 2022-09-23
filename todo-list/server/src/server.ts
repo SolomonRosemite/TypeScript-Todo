@@ -11,9 +11,12 @@ import {
   TextDocumentSyncKind,
   InitializeResult,
   Range,
+  PublishDiagnosticsParams,
 } from "vscode-languageserver";
 
 import { TextDocument } from "vscode-languageserver-textdocument";
+import { IAction, actions } from "./actions";
+import { createCommentData } from "./language";
 
 // Create a connection for the server, using Node's IPC as a transport.
 // Also include all preview / proposed LSP features.
@@ -70,95 +73,60 @@ connection.onInitialized(() => {
   }
 });
 
-documents.onDidChangeContent((change) => {
-  validateTextDocument(
-    change.document,
-    "TODO",
-    DiagnosticSeverity.Information,
-    []
-  )
-    .then((values) =>
-      validateTextDocument(
-        change.document,
-        "BUG",
-        DiagnosticSeverity.Warning,
-        values
-      )
-    )
-    .then((values) =>
-      validateTextDocument(
-        change.document,
-        "NOTE",
-        DiagnosticSeverity.Hint,
-        values
-      )
-    );
+documents.onDidChangeContent((event) => {
+  const diagnostics = actions
+    .map((action) => createDiagnosticsForDocument(event.document, action))
+    .flat();
+
+  connection.sendDiagnostics({
+    uri: event.document.uri,
+    diagnostics,
+  });
 });
 
-async function validateTextDocument(
+function createDiagnosticsForDocument(
   textDocument: TextDocument,
-  keyWord: string,
-  type: DiagnosticSeverity,
-  prev: Diagnostic[]
-): Promise<Diagnostic[]> {
-  // Get current textDocument
-  const text = textDocument.getText();
+  action: IAction
+): Diagnostic[] {
+  const { actionKeyWord, diagnosticSeverity } = action;
+  const docContent = textDocument.getText();
 
   // Returns RegExp for current used Language
-  const values = GetRightLanguage(textDocument.languageId, keyWord);
-  const patternV2 = RegExp(values[0], "g");
-  let m: RegExpExecArray | null;
+  const { comment, commentPrefixLength } = createCommentData(
+    textDocument.languageId,
+    actionKeyWord
+  );
 
-  // Store Diagnostics
-  let diagnostics: Diagnostic[] = prev;
+  const regex = RegExp(comment, "g");
+  let regExpArray: RegExpExecArray | null;
 
-  // Get all todos from text
-  while ((m = patternV2.exec(text.toUpperCase()))) {
+  const diagnostics: Diagnostic[] = [];
+
+  // Get all actions from document
+  while ((regExpArray = regex.exec(docContent.toUpperCase()))) {
     const range: Range = {
-      start: textDocument.positionAt(m.index),
+      start: textDocument.positionAt(regExpArray.index),
       end: {
-        line: textDocument.positionAt(m.index).line,
+        line: textDocument.positionAt(regExpArray.index).line,
         character: Number.MAX_VALUE - 1,
       },
     };
 
-    // Create Diagnostic
     const diagnostic: Diagnostic = {
-      severity: type,
+      severity: diagnosticSeverity,
       range: range,
       message: textDocument
         .getText(range)
-        .substring(parseInt(values[1]))
+        .substring(commentPrefixLength)
         .trimEnd(),
       source: "Rosemite",
       code: "todo",
     };
 
-    // Add Diagnostic to list
     diagnostics.push(diagnostic);
   }
 
-  // Send Diagnostics to client
-  connection.sendDiagnostics({ uri: textDocument.uri, diagnostics });
   return diagnostics;
-}
-
-// Returns RegExp for current used Language
-function GetRightLanguage(languageId: string, keyWord: string): string[] {
-  switch (languageId) {
-    case "python":
-      return [`# ${keyWord}`, "2"];
-    case "powershell":
-      return [`# ${keyWord}`, "2"];
-    case "yaml":
-      return [`# ${keyWord}`, "2"];
-    case "html":
-      return [`<!-- ${keyWord}`, "0"];
-    case "lua":
-      return [`-- ${keyWord}`, "0"];
-    default:
-      return [`// ${keyWord}`, "2"];
-  }
 }
 
 // This handler provides the initial list of the completion items.
