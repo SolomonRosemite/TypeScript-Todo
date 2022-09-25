@@ -24,8 +24,42 @@
   "main": "./client/out/extension",
   "contributes": {
     "configuration": {
-      "type": "object",
-      "title": "Configuration"
+      "title": "Simple Todo",
+      "properties": {
+        "simpleTodo.overrideFoldersToIgnore": {
+          "type": "array",
+          "default": [
+            "Library",
+            "node_modules",
+            "dist",
+            "build",
+            ".next"
+          ],
+          "description": "List of folders to ignore when searching for todos or other actions."
+        },
+        "simpleTodo.overrideLanguagesToCheck": {
+          "type": "array",
+          "default": [
+            "ts",
+            "js",
+            "html",
+            "bat",
+            "c",
+            "cpp",
+            "cs",
+            "go",
+            "java",
+            "lua",
+            "php",
+            "yaml",
+            "py",
+            "swift",
+            "dart",
+            "ps1"
+          ],
+          "description": "List of file extensions to check for when searching for todos or other actions."
+        }
+      }
     }
   },
   "scripts": {

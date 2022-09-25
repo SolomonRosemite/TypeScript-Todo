@@ -2,15 +2,11 @@ import * as path from "path";
 import {
   workspace,
   ExtensionContext,
-  commands,
   TextDocument,
-  languages,
   Diagnostic,
-  Position,
-  DiagnosticSeverity,
   Range,
+  Position,
   window,
-  GlobPattern,
 } from "vscode";
 
 import {
@@ -19,8 +15,11 @@ import {
   ServerOptions,
   TransportKind,
 } from "vscode-languageclient";
+import { actions, IAction } from "./actions";
+import { createCommentConfiguration } from "./language";
 
 let client: LanguageClient;
+const simpleTodoConfigurationKey = "simpleTodo";
 
 export function activate(context: ExtensionContext) {
   let serverModule = context.asAbsolutePath(
@@ -53,94 +52,90 @@ export function activate(context: ExtensionContext) {
 
   client.start();
 
+  // Listening to configuration changes
+  context.subscriptions.push(
+    workspace.onDidChangeConfiguration((e) => {
+      if (e.affectsConfiguration(simpleTodoConfigurationKey)) {
+        client.diagnostics.clear();
+        createDiagnosticsForWorkspace();
+      }
+    })
+  );
+  createDiagnosticsForWorkspace();
+}
+
+function createDiagnosticsForWorkspace() {
+  const foldersToExclude = workspace
+    .getConfiguration(simpleTodoConfigurationKey)
+    .get<string[]>("overrideFoldersToIgnore");
+
+  const languagesToInclude = workspace
+    .getConfiguration(simpleTodoConfigurationKey)
+    .get<string[]>("overrideLanguagesToCheck");
+
+  const foldersToExcludeString = foldersToExclude.join(",");
+  const languagesToIncludeString = languagesToInclude.join(",");
+
   workspace
     .findFiles(
-      "**/*.{ts,js,html,bat,c,cpp,cs,go,java,lua,php,yaml,py,swift,dart,powershell}",
-      "**/{Library,node_modules,dist,build,.next}/**"
+      `**/*.{${languagesToIncludeString}}`,
+      `**/{${foldersToExcludeString}}/**`
     )
     .then((files) => {
-      // Foreach textDocument highlight actions
-      for (let i = 0; i < files.length; i++) {
-        workspace.openTextDocument(files[i]).then((textDocument) => {
-          validateTextDocument(
-            textDocument,
-            "TODO",
-            DiagnosticSeverity.Information,
-            []
-          )
-            .then((values) =>
-              validateTextDocument(
-                textDocument,
-                "BUG",
-                DiagnosticSeverity.Warning,
-                values
-              )
-            )
-            .then((values) =>
-              validateTextDocument(
-                textDocument,
-                "NOTE",
-                DiagnosticSeverity.Hint,
-                values
-              )
-            );
+      files.forEach((file) => {
+        workspace.openTextDocument(file).then((doc) => {
+          const diagnostics = actions
+            .map((action) => createDiagnosticsForDocument(doc, action))
+            .flat();
+
+          client.diagnostics.set(doc.uri, diagnostics);
         });
-      }
+      });
     });
 }
 
-async function validateTextDocument(
+function createDiagnosticsForDocument(
   textDocument: TextDocument,
-  keyWord: string,
-  type: DiagnosticSeverity,
-  prev: Diagnostic[]
-): Promise<Diagnostic[]> {
-  const text = textDocument.getText();
+  action: IAction
+): Diagnostic[] {
+  const { actionKeyWord, diagnosticSeverity } = action;
+  const docContent = textDocument.getText();
 
-  const values = GetRightLanguage(textDocument.languageId, keyWord);
-  let patternV2 = RegExp(values[0], "g");
+  // Returns RegExp for current used Language
+  const { comment, commentPrefixLength } = createCommentConfiguration(
+    textDocument.languageId,
+    actionKeyWord
+  );
 
-  let m: RegExpExecArray | null;
-  let diagnostics: Diagnostic[] = [];
+  const regex = RegExp(comment, "g");
+  let regExpArray: RegExpExecArray | null;
 
-  while ((m = patternV2.exec(text.toUpperCase()))) {
+  const diagnostics: Diagnostic[] = [];
+
+  // Get all actions from document
+  while ((regExpArray = regex.exec(docContent.toUpperCase()))) {
     const end = new Position(
-      textDocument.positionAt(m.index).line,
+      textDocument.positionAt(regExpArray.index).line,
       Number.MAX_VALUE - 1
     );
 
-    const range = new Range(textDocument.positionAt(m.index), end);
+    const range = new Range(textDocument.positionAt(regExpArray.index), end);
 
-    const line = textDocument.getText(range);
-    let diagnostic: Diagnostic = {
-      severity: DiagnosticSeverity.Information,
+    const diagnostic: Diagnostic = {
+      severity: diagnosticSeverity,
       range: range,
-      message: line.substring(parseInt(values[1])).trimRight(),
+      message: textDocument
+        .getText(range)
+        .substring(commentPrefixLength)
+        .trimEnd(),
       source: "Rosemite",
       code: "todo",
     };
+
     diagnostics.push(diagnostic);
   }
-  client.diagnostics.set(textDocument.uri, diagnostics);
-  return diagnostics;
-}
 
-// Returns RegExp for current used Language
-function GetRightLanguage(languageId: string, keyWord: string): string[] {
-  switch (languageId) {
-    case "python":
-      return [`# ${keyWord}`, "2"];
-    case "powershell":
-      return [`# ${keyWord}`, "2"];
-    case "yaml":
-      return [`# ${keyWord}`, "2"];
-    case "html":
-      return [`<!-- ${keyWord}`, "0"];
-    case "lua":
-      return [`-- ${keyWord}`, "0"];
-    default:
-      return [`// ${keyWord}`, "2"];
-  }
+  return diagnostics;
 }
 
 export function deactivate(): Thenable<void> | undefined {

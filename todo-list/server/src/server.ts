@@ -2,7 +2,6 @@ import {
   createConnection,
   TextDocuments,
   Diagnostic,
-  DiagnosticSeverity,
   ProposedFeatures,
   InitializeParams,
   DidChangeConfigurationNotification,
@@ -11,7 +10,6 @@ import {
   TextDocumentSyncKind,
   InitializeResult,
   Range,
-  PublishDiagnosticsParams,
 } from "vscode-languageserver";
 
 import { TextDocument } from "vscode-languageserver-textdocument";
@@ -27,7 +25,10 @@ let documents: TextDocuments<TextDocument> = new TextDocuments(TextDocument);
 
 let hasConfigurationCapability: boolean = false;
 let hasWorkspaceFolderCapability: boolean = false;
-let hasDiagnosticRelatedInformationCapability: boolean = false;
+
+let initializedConfigurations: Promise<any>;
+let fileExtensionsToAcknowledge: string[];
+let foldersToIgnore: string[];
 
 connection.onInitialize((params: InitializeParams) => {
   let capabilities = params.capabilities;
@@ -37,11 +38,6 @@ connection.onInitialize((params: InitializeParams) => {
   );
   hasWorkspaceFolderCapability = !!(
     capabilities.workspace && !!capabilities.workspace.workspaceFolders
-  );
-  hasDiagnosticRelatedInformationCapability = !!(
-    capabilities.textDocument &&
-    capabilities.textDocument.publishDiagnostics &&
-    capabilities.textDocument.publishDiagnostics.relatedInformation
   );
 
   const result: InitializeResult = {
@@ -64,6 +60,21 @@ connection.onInitialize((params: InitializeParams) => {
 });
 
 connection.onInitialized(() => {
+  const fetchFoldersToIgnorePromise =
+    fetchAndUpdateNewFoldersToIgnoreFromClient();
+  const fetchFileExtensionsToAcknowledgePromise =
+    fetchAndUpdateNewFileExtensionsToAcknowledgeFromClient();
+
+  initializedConfigurations = Promise.all([
+    fetchFoldersToIgnorePromise,
+    fetchFileExtensionsToAcknowledgePromise,
+  ]);
+
+  connection.onDidChangeConfiguration((_) => {
+    fetchAndUpdateNewFoldersToIgnoreFromClient();
+    fetchAndUpdateNewFileExtensionsToAcknowledgeFromClient();
+  });
+
   if (hasConfigurationCapability) {
     // Register for all configuration changes.
     connection.client.register(
@@ -73,7 +84,25 @@ connection.onInitialized(() => {
   }
 });
 
-documents.onDidChangeContent((event) => {
+documents.onDidChangeContent(async (event) => {
+  await initializedConfigurations;
+
+  const fileExtension = event.document.uri.substring(
+    event.document.uri.lastIndexOf(".") + 1
+  );
+
+  if (!fileExtensionsToAcknowledge.includes(fileExtension)) {
+    return;
+  }
+
+  const shouldIgnoreDocument = foldersToIgnore.some((folder) =>
+    decodeURI(event.document.uri).includes(folder)
+  );
+
+  if (shouldIgnoreDocument) {
+    return;
+  }
+
   const diagnostics = actions
     .map((action) => createDiagnosticsForDocument(event.document, action))
     .flat();
@@ -127,6 +156,16 @@ function createDiagnosticsForDocument(
   }
 
   return diagnostics;
+}
+
+async function fetchAndUpdateNewFoldersToIgnoreFromClient(): Promise<void> {
+  const config = await connection.workspace.getConfiguration("simpleTodo");
+  foldersToIgnore = config["overrideFoldersToIgnore"];
+}
+
+async function fetchAndUpdateNewFileExtensionsToAcknowledgeFromClient(): Promise<void> {
+  const config = await connection.workspace.getConfiguration("simpleTodo");
+  fileExtensionsToAcknowledge = config["overrideLanguagesToCheck"];
 }
 
 // This handler provides the initial list of the completion items.
