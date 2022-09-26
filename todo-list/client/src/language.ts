@@ -1,3 +1,5 @@
+import { window } from "vscode";
+
 export interface ICommentConfiguration {
   comment: string;
   commentPrefixLength: number;
@@ -12,15 +14,7 @@ interface ILanguageConfiguration {
 const languages: ILanguageConfiguration[] = [
   {
     commentPrefix: "#",
-    name: "python",
-  },
-  {
-    commentPrefix: "#",
-    name: "powershell",
-  },
-  {
-    commentPrefix: "#",
-    name: "yaml",
+    name: "elixir",
   },
   {
     commentPrefix: "<!--",
@@ -33,8 +27,16 @@ const languages: ILanguageConfiguration[] = [
     fixedCommentPrefixLength: 0,
   },
   {
-    commentPrefix: "//",
+    commentPrefix: "#",
+    name: "powershell",
+  },
+  {
+    commentPrefix: "#",
     name: "python",
+  },
+  {
+    commentPrefix: "#",
+    name: "yaml",
   },
 ];
 
@@ -42,6 +44,10 @@ export function createCommentConfiguration(
   languageName: string,
   keyWord: string
 ): ICommentConfiguration {
+  console.log(languageName);
+  if (languageName.includes("e")) {
+    window.showInformationMessage(languageName);
+  }
   const language = languages.filter((lang) => lang.name === languageName);
   const defaultCommentPrefixLength = 2;
 

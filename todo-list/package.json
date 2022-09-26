@@ -40,22 +40,26 @@
         "simpleTodo.overrideLanguagesToCheck": {
           "type": "array",
           "default": [
-            "ts",
-            "js",
-            "html",
             "bat",
             "c",
             "cpp",
             "cs",
+            "css",
+            "dart",
+            "ex",
             "go",
+            "html",
             "java",
+            "js",
             "lua",
             "php",
-            "yaml",
+            "ps1",
             "py",
+            "rs",
+            "scss",
             "swift",
-            "dart",
-            "ps1"
+            "ts",
+            "yaml"
           ],
           "description": "List of file extensions to check for when searching for todos or other actions."
         }

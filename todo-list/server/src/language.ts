@@ -12,15 +12,7 @@ interface ILanguage {
 const languages: ILanguage[] = [
   {
     commentPrefix: "#",
-    name: "python",
-  },
-  {
-    commentPrefix: "#",
-    name: "powershell",
-  },
-  {
-    commentPrefix: "#",
-    name: "yaml",
+    name: "elixir",
   },
   {
     commentPrefix: "<!--",
@@ -33,8 +25,16 @@ const languages: ILanguage[] = [
     fixedCommentPrefixLength: 0,
   },
   {
-    commentPrefix: "//",
+    commentPrefix: "#",
+    name: "powershell",
+  },
+  {
+    commentPrefix: "#",
     name: "python",
+  },
+  {
+    commentPrefix: "#",
+    name: "yaml",
   },
 ];
 
