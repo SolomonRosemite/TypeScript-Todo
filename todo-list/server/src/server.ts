@@ -10,11 +10,17 @@ import {
   TextDocumentSyncKind,
   InitializeResult,
   Range,
+  DiagnosticSeverity,
 } from "vscode-languageserver";
 
 import { TextDocument } from "vscode-languageserver-textdocument";
 import { IAction, actions } from "./actions";
-import { createCommentData } from "./language";
+import {
+  createCommentData,
+  ICommentData,
+  IExtractAction,
+  IExtractedCommentDataInfoType,
+} from "./language";
 
 // Create a connection for the server, using Node's IPC as a transport.
 // Also include all preview / proposed LSP features.
@@ -118,13 +124,105 @@ function createDiagnosticsForDocument(
   action: IAction
 ): Diagnostic[] {
   const { actionKeyWord, diagnosticSeverity } = action;
-  const docContent = textDocument.getText();
 
   // Returns RegExp for current used Language
-  const { comment, commentPrefixLength } = createCommentData(
+  const { data, extract } = createCommentData(
     textDocument.languageId,
     actionKeyWord
   );
+  if (data) {
+    return createDiagnosticsByCommentData(
+      diagnosticSeverity,
+      textDocument,
+      data
+    );
+  }
+
+  return createDiagnosticsByExtract(
+    diagnosticSeverity,
+    textDocument,
+    extract!,
+    action
+  );
+}
+
+function createDiagnosticsByExtract(
+  diagnosticSeverity: DiagnosticSeverity,
+  textDocument: TextDocument,
+  extract: IExtractAction,
+  action: IAction
+): Diagnostic[] {
+  const extractedData = extract(textDocument.getText());
+
+  const diagnostics = Array.from(extractedData.values()).flatMap(
+    (commentData) =>
+      createExtractDiagnostics(
+        diagnosticSeverity,
+        textDocument,
+        action,
+        commentData.info.type,
+        {
+          start: { line: commentData.begin - 1, character: 0 },
+          end: { line: commentData.end, character: 0 },
+        }
+      )
+  );
+
+  return diagnostics;
+}
+
+function createExtractDiagnostics(
+  diagnosticSeverity: DiagnosticSeverity,
+  textDocument: TextDocument,
+  action: IAction,
+  commentType: IExtractedCommentDataInfoType,
+  commentRange: Range
+): Diagnostic[] {
+  const diagnostics = [];
+  const regex = RegExp(action.actionKeyWord, "g");
+  let regExpArray: RegExpExecArray | null;
+
+  // Get all actions from document
+  while (
+    (regExpArray = regex.exec(textDocument.getText(commentRange).toUpperCase()))
+  ) {
+    let start = textDocument.positionAt(regExpArray.index);
+    start = {
+      character: commentType == "multiline" ? start.character : 0,
+      line: start.line + commentRange.start.line,
+    };
+
+    const range: Range = {
+      start: start,
+      end: {
+        line: start.line,
+        character: Number.MAX_VALUE - 1,
+      },
+    };
+
+    const diagnostic: Diagnostic = {
+      severity: diagnosticSeverity,
+      range: range,
+      message: textDocument
+        .getText(range)
+        .substring(commentType == "singleline" ? 3 : 0)
+        .trimEnd(),
+      source: "Rosemite",
+      code: "todo",
+    };
+
+    diagnostics.push(diagnostic);
+  }
+
+  return diagnostics;
+}
+
+function createDiagnosticsByCommentData(
+  diagnosticSeverity: DiagnosticSeverity,
+  textDocument: TextDocument,
+  data: ICommentData
+) {
+  const { comment, commentPrefixLength } = data;
 
   const regex = RegExp(comment, "g");
   let regExpArray: RegExpExecArray | null;
@@ -132,7 +230,7 @@ function createDiagnosticsForDocument(
   const diagnostics: Diagnostic[] = [];
 
   // Get all actions from document
-  while ((regExpArray = regex.exec(docContent.toUpperCase()))) {
+  while ((regExpArray = regex.exec(textDocument.getText().toUpperCase()))) {
     const range: Range = {
       start: textDocument.positionAt(regExpArray.index),
       end: {

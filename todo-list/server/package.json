@@ -12,6 +12,7 @@
     "url": "https://github.com/SolomonRosemite/TypeScript-Todo"
   },
   "dependencies": {
+    "multilang-extract-comments": "^0.4.0",
     "vscode-languageserver": "^6.1.1",
     "vscode-languageserver-textdocument": "^1.0.1"
   },
