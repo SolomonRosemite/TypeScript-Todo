@@ -5,7 +5,7 @@
   "author": "SolomonRosemite",
   "icon": "images/todo.png",
   "license": "MIT",
-  "version": "1.8.7",
+  "version": "1.8.8",
   "repository": {
     "type": "git",
     "url": "https://github.com/SolomonRosemite/TypeScript-Todo"
@@ -80,5 +80,8 @@
     "eslint": "^6.4.0",
     "mocha": "^6.2.2",
     "typescript": "^3.9.5"
+  },
+  "dependencies": {
+    "multilang-extract-comments": "^0.4.0"
   }
 }
