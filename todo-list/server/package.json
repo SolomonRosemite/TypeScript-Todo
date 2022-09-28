@@ -1,7 +1,7 @@
 {
   "name": "lsp-todo-server",
   "description": "Implementation of a language server in node.",
-  "version": "1.8.6",
+  "version": "1.8.7",
   "author": "SolomonRosemite",
   "license": "MIT",
   "engines": {
@@ -12,7 +12,6 @@
     "url": "https://github.com/SolomonRosemite/TypeScript-Todo"
   },
   "dependencies": {
-    "multilang-extract-comments": "^0.4.0",
     "vscode-languageserver": "^6.1.1",
     "vscode-languageserver-textdocument": "^1.0.1"
   },
