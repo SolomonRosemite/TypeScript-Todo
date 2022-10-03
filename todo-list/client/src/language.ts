@@ -1,8 +1,15 @@
+import { Diagnostic, Uri } from "vscode";
+
 const extract = require("multilang-extract-comments");
 
 type IExtractResult = Map<string, IExtractedCommentData>;
 export type IExtractAction = (text: string) => IExtractResult;
 export type IExtractedCommentDataInfoType = "singleline" | "multiline";
+
+export interface DiagnosticsWithUri {
+  diagnostics: Diagnostic[];
+  uri: Uri;
+}
 
 export interface ICommentConfiguration {
   data?: ICommentData;
@@ -11,7 +18,6 @@ export interface ICommentConfiguration {
 
 export interface ICommentData {
   comment: string;
-  commentPrefixLength: number;
 }
 
 interface IExtractedCommentData {
@@ -28,7 +34,6 @@ interface IExtractedCommentDataInfo {
 interface ILanguage {
   name: string;
   commentPrefix: string;
-  fixedCommentPrefixLength?: number;
 }
 
 const languages: ILanguage[] = [
@@ -39,12 +44,10 @@ const languages: ILanguage[] = [
   {
     commentPrefix: "<!--",
     name: "html",
-    fixedCommentPrefixLength: 0,
   },
   {
     commentPrefix: "--",
     name: "lua",
-    fixedCommentPrefixLength: 0,
   },
   {
     commentPrefix: "#",
@@ -62,17 +65,14 @@ const languages: ILanguage[] = [
 
 export function createCommentData(
   languageName: string,
-  keyWord: string
+  actionName: string
 ): ICommentConfiguration {
   const language = languages.filter((lang) => lang.name === languageName);
-  const defaultCommentPrefixLength = 2;
 
   if (language.length != 0) {
     return {
       data: {
-        comment: `${language[0].commentPrefix} ${keyWord}`,
-        commentPrefixLength:
-          language[0].fixedCommentPrefixLength ?? defaultCommentPrefixLength,
+        comment: `${language[0].commentPrefix} ${actionName}`,
       },
     };
   }

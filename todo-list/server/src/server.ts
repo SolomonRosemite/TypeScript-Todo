@@ -1,7 +1,6 @@
 import {
   createConnection,
   TextDocuments,
-  Diagnostic,
   ProposedFeatures,
   InitializeParams,
   DidChangeConfigurationNotification,
@@ -9,18 +8,9 @@ import {
   TextDocumentPositionParams,
   TextDocumentSyncKind,
   InitializeResult,
-  Range,
-  DiagnosticSeverity,
 } from "vscode-languageserver";
 
 import { TextDocument } from "vscode-languageserver-textdocument";
-import { IAction, actions } from "./actions";
-import {
-  createCommentData,
-  ICommentData,
-  IExtractAction,
-  IExtractedCommentDataInfoType,
-} from "./language";
 
 // Create a connection for the server, using Node's IPC as a transport.
 // Also include all preview / proposed LSP features.
@@ -31,10 +21,6 @@ let documents: TextDocuments<TextDocument> = new TextDocuments(TextDocument);
 
 let hasConfigurationCapability: boolean = false;
 let hasWorkspaceFolderCapability: boolean = false;
-
-let initializedConfigurations: Promise<any>;
-let fileExtensionsToAcknowledge: string[];
-let foldersToIgnore: string[];
 
 connection.onInitialize((params: InitializeParams) => {
   let capabilities = params.capabilities;
@@ -66,21 +52,6 @@ connection.onInitialize((params: InitializeParams) => {
 });
 
 connection.onInitialized(() => {
-  const fetchFoldersToIgnorePromise =
-    fetchAndUpdateNewFoldersToIgnoreFromClient();
-  const fetchFileExtensionsToAcknowledgePromise =
-    fetchAndUpdateNewFileExtensionsToAcknowledgeFromClient();
-
-  initializedConfigurations = Promise.all([
-    fetchFoldersToIgnorePromise,
-    fetchFileExtensionsToAcknowledgePromise,
-  ]);
-
-  connection.onDidChangeConfiguration((_) => {
-    fetchAndUpdateNewFoldersToIgnoreFromClient();
-    fetchAndUpdateNewFileExtensionsToAcknowledgeFromClient();
-  });
-
   if (hasConfigurationCapability) {
     // Register for all configuration changes.
     connection.client.register(
@@ -89,182 +60,6 @@ connection.onInitialized(() => {
     );
   }
 });
-
-documents.onDidChangeContent(async (event) => {
-  await initializedConfigurations;
-
-  const fileExtension = event.document.uri.substring(
-    event.document.uri.lastIndexOf(".") + 1
-  );
-
-  if (!fileExtensionsToAcknowledge.includes(fileExtension)) {
-    return;
-  }
-
-  const shouldIgnoreDocument = foldersToIgnore.some((folder) =>
-    decodeURI(event.document.uri).includes(folder)
-  );
-
-  if (shouldIgnoreDocument) {
-    return;
-  }
-
-  const diagnostics = actions
-    .map((action) => createDiagnosticsForDocument(event.document, action))
-    .flat();
-
-  connection.sendDiagnostics({
-    uri: event.document.uri,
-    diagnostics,
-  });
-});
-
-function createDiagnosticsForDocument(
-  textDocument: TextDocument,
-  action: IAction
-): Diagnostic[] {
-  const { actionKeyWord, diagnosticSeverity } = action;
-
-  // Returns RegExp for current used Language
-  const { data, extract } = createCommentData(
-    textDocument.languageId,
-    actionKeyWord
-  );
-  if (data) {
-    return createDiagnosticsByCommentData(
-      diagnosticSeverity,
-      textDocument,
-      data
-    );
-  }
-
-  return createDiagnosticsByExtract(
-    diagnosticSeverity,
-    textDocument,
-    extract!,
-    action
-  );
-}
-
-function createDiagnosticsByExtract(
-  diagnosticSeverity: DiagnosticSeverity,
-  textDocument: TextDocument,
-  extract: IExtractAction,
-  action: IAction
-): Diagnostic[] {
-  const extractedData = extract(textDocument.getText());
-
-  const diagnostics = Array.from(extractedData.values()).flatMap(
-    (commentData) =>
-      createExtractDiagnostics(
-        diagnosticSeverity,
-        textDocument,
-        action,
-        commentData.info.type,
-        {
-          start: { line: commentData.begin - 1, character: 0 },
-          end: { line: commentData.end, character: 0 },
-        }
-      )
-  );
-
-  return diagnostics;
-}
-
-function createExtractDiagnostics(
-  diagnosticSeverity: DiagnosticSeverity,
-  textDocument: TextDocument,
-  action: IAction,
-  commentType: IExtractedCommentDataInfoType,
-  commentRange: Range
-): Diagnostic[] {
-  const diagnostics = [];
-  const regex = RegExp(action.actionKeyWord, "g");
-  let regExpArray: RegExpExecArray | null;
-
-  // Get all actions from document
-  while (
-    (regExpArray = regex.exec(textDocument.getText(commentRange).toUpperCase()))
-  ) {
-    let start = textDocument.positionAt(regExpArray.index);
-    start = {
-      character: commentType == "multiline" ? start.character : 0,
-      line: start.line + commentRange.start.line,
-    };
-
-    const range: Range = {
-      start: start,
-      end: {
-        line: start.line,
-        character: Number.MAX_VALUE - 1,
-      },
-    };
-
-    const diagnostic: Diagnostic = {
-      severity: diagnosticSeverity,
-      range: range,
-      message: textDocument
-        .getText(range)
-        .substring(commentType == "singleline" ? 3 : 0)
-        .trimEnd(),
-      source: "Rosemite",
-      code: "todo",
-    };
-
-    diagnostics.push(diagnostic);
-  }
-
-  return diagnostics;
-}
-
-function createDiagnosticsByCommentData(
-  diagnosticSeverity: DiagnosticSeverity,
-  textDocument: TextDocument,
-  data: ICommentData
-) {
-  const { comment, commentPrefixLength } = data;
-
-  const regex = RegExp(comment, "g");
-  let regExpArray: RegExpExecArray | null;
-
-  const diagnostics: Diagnostic[] = [];
-
-  // Get all actions from document
-  while ((regExpArray = regex.exec(textDocument.getText().toUpperCase()))) {
-    const range: Range = {
-      start: textDocument.positionAt(regExpArray.index),
-      end: {
-        line: textDocument.positionAt(regExpArray.index).line,
-        character: Number.MAX_VALUE - 1,
-      },
-    };
-
-    const diagnostic: Diagnostic = {
-      severity: diagnosticSeverity,
-      range: range,
-      message: textDocument
-        .getText(range)
-        .substring(commentPrefixLength)
-        .trimEnd(),
-      source: "Rosemite",
-      code: "todo",
-    };
-
-    diagnostics.push(diagnostic);
-  }
-
-  return diagnostics;
-}
-
-async function fetchAndUpdateNewFoldersToIgnoreFromClient(): Promise<void> {
-  const config = await connection.workspace.getConfiguration("simpleTodo");
-  foldersToIgnore = config["overrideFoldersToIgnore"];
-}
-
-async function fetchAndUpdateNewFileExtensionsToAcknowledgeFromClient(): Promise<void> {
-  const config = await connection.workspace.getConfiguration("simpleTodo");
-  fileExtensionsToAcknowledge = config["overrideLanguagesToCheck"];
-}
 
 // This handler provides the initial list of the completion items.
 connection.onCompletion(

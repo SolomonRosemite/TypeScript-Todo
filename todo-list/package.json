@@ -37,6 +37,24 @@
           ],
           "description": "List of folders to ignore when searching for todos or other actions."
         },
+        "simpleTodo.overrideActionKeywords": {
+          "type": "array",
+          "default": [
+            {
+              "actionName": "Todo:",
+              "severity": "Information"
+            },
+            {
+              "actionName": "Bug:",
+              "severity": "Warning"
+            },
+            {
+              "actionName": "Note:",
+              "severity": "Hint"
+            }
+          ],
+          "description": "List of actions configured. Note that the values are not case sensitive."
+        },
         "simpleTodo.overrideLanguagesToCheck": {
           "type": "array",
           "default": [

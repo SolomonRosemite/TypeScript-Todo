@@ -1,24 +1,36 @@
-import { DiagnosticSeverity } from "vscode-languageclient";
+import { DiagnosticSeverity } from "vscode";
 
 export interface IAction {
-  actionKeyWord: string;
+  actionName: string;
   diagnosticSeverity: DiagnosticSeverity;
 }
 
-// NOTE: For some reason the DiagnosticSeverity type doesn't correspond to the name of the DiagnosticSeverity.
-// For example the DiagnosticSeverity.Warning is actually a DiagnosticSeverity.Information.
-// However on in the server.ts this issue doesn't occur.
-export const actions: IAction[] = [
-  {
-    actionKeyWord: "TODO",
-    diagnosticSeverity: DiagnosticSeverity.Warning,
-  },
-  {
-    actionKeyWord: "BUG",
-    diagnosticSeverity: DiagnosticSeverity.Error,
-  },
-  {
-    actionKeyWord: "NOTE",
-    diagnosticSeverity: DiagnosticSeverity.Information,
-  },
-];
+export interface IConfigAction {
+  actionName: string;
+  severity: string;
+}
+
+export function convertActionFromConfig(actions: IConfigAction[]): IAction[] {
+  return actions.map((action) => {
+    return {
+      actionName: action.actionName,
+      diagnosticSeverity: parseDiagnosticSeverity(action.severity),
+    };
+  });
+}
+
+function parseDiagnosticSeverity(
+  diagnosticSeverity: string
+): DiagnosticSeverity {
+  switch (diagnosticSeverity.toLowerCase()) {
+    case "hint":
+      return DiagnosticSeverity.Hint;
+    default:
+    case "information":
+      return DiagnosticSeverity.Information;
+    case "warning":
+      return DiagnosticSeverity.Warning;
+    case "error":
+      return DiagnosticSeverity.Error;
+  }
+}
